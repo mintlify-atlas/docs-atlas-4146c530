@@ -1,0 +1,98 @@
+{
+  "projectType": "frontend",
+  "projectName": "Player2",
+  "projectDescription": "An enhanced Spotify music player web app with dynamic color extraction, real-time synchronized lyrics, and modern UI.",
+  "theme": "palm",
+  "primaryColor": "#1DB954",
+  "lightColor": "#1ED760",
+  "darkColor": "#169C46",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "setup"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/spotify-integration",
+              "features/dynamic-colors",
+              "features/lyrics-display",
+              "features/queue-management"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/overview",
+              "components/dynamic-background",
+              "components/lyrics-display",
+              "components/search",
+              "components/drawers"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Contexts",
+            "pages": [
+              "api/contexts/spotify-context",
+              "api/contexts/lyrics-context"
+            ]
+          },
+          {
+            "group": "Hooks",
+            "pages": [
+              "api/hooks/use-debounce",
+              "api/hooks/use-add-to-queue"
+            ]
+          },
+          {
+            "group": "Types",
+            "pages": [
+              "api/types/spotify-types",
+              "api/types/lyrics-types"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Spotify Integration with OAuth authentication",
+    "Dynamic color extraction from album artwork",
+    "Real-time synchronized lyrics with karaoke-style highlighting",
+    "Queue management and playback control",
+    "Search functionality for tracks, artists, and albums",
+    "Context menu for quick actions",
+    "Responsive modern UI with TailwindCSS"
+  ],
+  "publicApiSurface": [
+    "SpotifyProvider",
+    "useSpotify",
+    "LyricsProvider",
+    "useLyrics",
+    "DynamicBackground",
+    "LyricsDisplay",
+    "Search",
+    "QueueDrawer",
+    "ArtistDrawer",
+    "useDebounce",
+    "useAddToQueue",
+    "SpotifyTrack",
+    "SpotifyArtist",
+    "SpotifyAlbum",
+    "LyricsResponse",
+    "LyricsLine"
+  ]
+}
