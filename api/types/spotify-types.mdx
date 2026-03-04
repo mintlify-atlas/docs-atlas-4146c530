@@ -158,3 +158,40 @@ Represents an image resource from Spotify.
 <ResponseField name="width" type="number" required>
   The image width in pixels
 </ResponseField>
+
+---
+
+## SpotifyItem
+
+Union type representing any Spotify item that can appear in search results or the queue.
+
+```typescript
+type SpotifyItem = SpotifyTrack | SpotifyArtist | SpotifyAlbum | SpotifyPlaylist;
+```
+
+This type is commonly used in search functionality where results can be of different types. Each item has a discriminated `type` field (`'track'`, `'artist'`, `'album'`, or `'playlist'`) that allows for type narrowing.
+
+### Example Usage
+
+```typescript
+function handleSearchResult(item: SpotifyItem) {
+  switch (item.type) {
+    case 'track':
+      // TypeScript knows item is SpotifyTrack
+      console.log(`Track: ${item.name} - ${item.artists[0].name}`);
+      break;
+    case 'artist':
+      // TypeScript knows item is SpotifyArtist
+      console.log(`Artist: ${item.name}`);
+      break;
+    case 'album':
+      // TypeScript knows item is SpotifyAlbum
+      console.log(`Album: ${item.name}`);
+      break;
+    case 'playlist':
+      // TypeScript knows item is SpotifyPlaylist
+      console.log(`Playlist: ${item.name}`);
+      break;
+  }
+}
+```
