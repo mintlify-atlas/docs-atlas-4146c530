@@ -1,0 +1,269 @@
+---
+title: Lyrics Display
+description: Real-time synchronized lyrics display with smart scrolling and artist-specific styling
+---
+
+Player2 displays real-time synchronized lyrics that automatically scroll and highlight as the track plays. The feature includes artist-specific styling and intelligent scroll behavior.
+
+## Architecture
+
+The lyrics system consists of two main components:
+
+1. **LyricsDisplay.Lyrics** - The scrollable lyrics container
+2. **LyricsDisplay.Button** - Toggle button with keyboard shortcut support
+
+## Real-time Synchronization
+
+Lyrics are synchronized to the playback position by comparing the current progress with line timestamps:
+
+```tsx src/components/LyricsDisplay.tsx
+useEffect(() => {
+  if (!lines) return;
+
+  const getCurrentLineIndex = () => {
+    const currentTime = progress / 1000; // Convert to seconds
+    let index = lines.findIndex((line, i) => {
+      const currentTimeTag = timeTagToSeconds(line.timeTag);
+      const nextTimeTag = lines[i + 1] 
+        ? timeTagToSeconds(lines[i + 1].timeTag)
+        : Infinity;
+      return currentTime >= currentTimeTag && currentTime < nextTimeTag;
+    });
+    return index;
+  };
+
+  setCurrentLineIndex(getCurrentLineIndex());
+}, [progress, lines]);
+```
+
+The `timeTagToSeconds` helper converts LRC format timestamps:
+
+```tsx src/components/LyricsDisplay.tsx
+const timeTagToSeconds = (timeTag: string): number => {
+  const [minutes, seconds] = timeTag.split(':');
+  return parseInt(minutes) * 60 + parseFloat(seconds);
+};
+```
+
+## Auto-scrolling Behavior
+
+The active line automatically scrolls into view with smooth animation:
+
+```tsx src/components/LyricsDisplay.tsx
+useEffect(() => {
+  if (containerRef.current && currentLineIndex >= 0 && lyricsVisible) {
+    const lineElement = containerRef.current.children[currentLineIndex] as HTMLElement;
+    if (lineElement) {
+      // Mark as programmatic scroll
+      isProgrammaticScrollRef.current = true;
+      lineElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Reset flag after scroll animation completes
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 600);
+    }
+  }
+}, [currentLineIndex]);
+```
+
+<Info>
+  The `isProgrammaticScrollRef` flag prevents UI state changes during automatic scrolling, allowing manual scrolling to override the auto-scroll.
+</Info>
+
+## Smart Scroll Detection
+
+Player2 detects when users manually scroll and temporarily disables auto-scroll:
+
+```tsx src/components/LyricsDisplay.tsx
+const handleScroll = () => {
+  // Only respond if it's user-initiated scrolling
+  if (!isProgrammaticScrollRef.current) {
+    // Remove "test" attribute when scrolling
+    container.removeAttribute('test');
+
+    // Clear existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    // Re-enable auto-scroll after 300ms of no scrolling
+    scrollTimeoutRef.current = setTimeout(() => {
+      container.setAttribute('test', '');
+    }, 300);
+  }
+};
+
+container.addEventListener('scroll', handleScroll);
+```
+
+This creates a natural user experience where:
+- Manual scrolling pauses auto-scroll
+- Auto-scroll resumes after 300ms of inactivity
+- Programmatic scrolling doesn't interfere with the UI
+
+## Visual Styling
+
+The active line is highlighted and scaled for emphasis:
+
+```tsx src/components/LyricsDisplay.tsx
+<div
+  className={`transition-all duration-300 text-center tracking-wide ${
+    index === currentLineIndex
+      ? 'text-2xl font-bold text-white transform scale-105'
+      : 'text-lg font-medium'
+  }`}
+  data-text={line.words}
+>
+  {line.words}
+</div>
+```
+
+## Artist-Specific Themes
+
+Player2 applies custom styling for specific artists and albums:
+
+```tsx src/components/LyricsDisplay.tsx
+useEffect(() => {
+  if (!currentTrack) {
+    setLyricsStyles(null);
+    return;
+  }
+  
+  const isCharliXCX = currentTrack.artists.some(artist => 
+    artist.name.toLowerCase() === "charli xcx"
+  );
+  
+  const albumName = currentTrack.album.name.toLowerCase();
+  const isBrat = albumName === "brat" || 
+                 albumName === "brat and it's completely different but also still brat";
+
+  if (isCharliXCX && isBrat) {
+    setLyricsStyles("brat");
+  } else if (isTaylorSwift && isFolklore) {
+    setLyricsStyles("folklore");
+  } else {
+    setLyricsStyles(null);
+  }
+}, [currentTrack]);
+```
+
+The style is applied via a data attribute:
+
+```tsx src/components/LyricsDisplay.tsx
+<div
+  ref={containerRef}
+  data-style={`${lyricsStyles ? lyricsStyles : ""}`}
+  style={{ "--active-index": currentLineIndex }}
+>
+  {/* Lyrics content */}
+</div>
+```
+
+<Card title="Supported Themes" icon="palette">
+  - **brat** - Charli XCX's "brat" album aesthetic
+  - **folklore** - Taylor Swift's "folklore" and "evermore" styling
+  - **6 in the morning** - Tender's minimalist style
+</Card>
+
+## Toggle Button with Keyboard Shortcut
+
+The lyrics can be toggled with a button or the `L` key:
+
+```tsx src/components/LyricsDisplay.tsx
+const LyricsDisplayButton = React.memo(function LyricsDisplayButton() {
+  const { lyricsVisible, setLyricsVisible } = useLyrics();
+  const { lyrics } = useSpotify();
+
+  const handleClick = () => {
+    if (document.startViewTransition) { 
+      document.startViewTransition(() => {
+        setLyricsVisible(!lyricsVisible);
+      });
+    } else {
+      setLyricsVisible(!lyricsVisible);
+    }
+  }
+
+  useEffect(() => {
+    const handleKeyDown = ({ key }) => {
+      if (key.toLowerCase() === "l") {
+        handleClick();
+      }
+    };
+  
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const hasLyrics = lyrics?.lines && lyrics.lines.length > 0;
+
+  return (
+    <button 
+      disabled={!hasLyrics} 
+      type='button' 
+      onClick={handleClick}
+    >
+      {/* Button content */}
+    </button>
+  );
+});
+```
+
+<Note>
+  The View Transitions API is used when available to create smooth animations when toggling lyrics.
+</Note>
+
+## Usage
+
+```tsx
+import { LyricsDisplay } from './components/LyricsDisplay';
+
+function Player() {
+  return (
+    <div>
+      {/* Player controls */}
+      <LyricsDisplay.Button />
+      
+      {/* Lyrics display area */}
+      <LyricsDisplay.Lyrics />
+    </div>
+  );
+}
+```
+
+## Component Structure
+
+The `LyricsDisplay` is exported as an object with named components:
+
+```tsx src/components/LyricsDisplay.tsx
+export const LyricsDisplay = {
+  Button: LyricsDisplayButton,
+  Lyrics: LyricsDisplayLyrics,
+}
+```
+
+This pattern provides:
+- Semantic component naming
+- Grouped related components
+- Flexible composition
+
+## Data Flow
+
+<Steps>
+  <Step title="Fetch Lyrics">
+    SpotifyContext fetches lyrics from LRCLIB when track changes
+  </Step>
+  <Step title="Parse Format">
+    LRC format is parsed into structured line objects with timestamps
+  </Step>
+  <Step title="Sync Progress">
+    Current line index is calculated based on playback progress
+  </Step>
+  <Step title="Auto-scroll">
+    Active line scrolls into view unless user is manually scrolling
+  </Step>
+  <Step title="Apply Theme">
+    Artist/album-specific styling is applied if detected
+  </Step>
+</Steps>

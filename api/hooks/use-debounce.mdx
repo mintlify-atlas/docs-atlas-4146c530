@@ -1,0 +1,73 @@
+---
+title: useDebounce
+description: A React hook that delays updating a value until after a specified delay period has passed since the last change
+---
+
+## Overview
+
+The `useDebounce` hook is a utility that delays updating a value until after a specified delay period has passed since the last change. This is particularly useful for optimizing performance in scenarios like search inputs, where you want to wait for the user to stop typing before triggering an API call.
+
+## Signature
+
+```typescript
+function useDebounce<T>(value: T, delay: number): T
+```
+
+## Parameters
+
+<ParamField path="value" type="T" required>
+  The value to debounce. Can be any type.
+</ParamField>
+
+<ParamField path="delay" type="number" required>
+  The delay in milliseconds to wait before updating the debounced value.
+</ParamField>
+
+## Return Value
+
+Returns the debounced value of type `T`. The returned value will only update after the specified delay has passed since the last change to the input value.
+
+## Usage Example
+
+From `src/components/Search.tsx:37`:
+
+```typescript
+import { useDebounce } from '../hooks/useDebounce';
+
+function Search() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms debounce delay
+  
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      // Perform search with debounced query
+      sdk?.search(debouncedSearchQuery, searchType).then((results) => {
+        setSearchResults(results);
+      });
+    }
+  }, [debouncedSearchQuery]);
+  
+  return (
+    <input 
+      type="search" 
+      onChange={(e) => setSearchQuery(e.target.value)} 
+    />
+  );
+}
+```
+
+## How It Works
+
+The hook uses `useState` and `useEffect` to manage the debounced value:
+
+1. It maintains an internal state for the debounced value
+2. When the input value changes, it sets a timeout to update the debounced value after the specified delay
+3. If the value changes again before the delay expires, the previous timeout is cleared and a new one is set
+4. This ensures the debounced value only updates after the user has stopped changing the input for the specified delay period
+
+## Common Use Cases
+
+- **Search inputs**: Wait for the user to finish typing before triggering a search API call
+- **Form validation**: Delay validation until the user has stopped typing
+- **Auto-save**: Wait for the user to pause editing before saving changes
+- **Resize handlers**: Throttle window resize events to improve performance

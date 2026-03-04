@@ -1,0 +1,199 @@
+---
+title: LyricsDisplay
+description: Displays synchronized lyrics with auto-scrolling and current line highlighting
+---
+
+The `LyricsDisplay` component provides a synchronized lyrics display that automatically scrolls and highlights lyrics as the track plays. It includes special styling for specific artists and albums.
+
+## Features
+
+- **Synchronized Scrolling** - Auto-scrolls to keep current line centered
+- **Time-based Highlighting** - Highlights the current lyric line based on playback progress
+- **Custom Styling** - Special styles for specific artists/albums (Charli XCX's Brat, Taylor Swift's Folklore, etc.)
+- **Keyboard Shortcuts** - Toggle lyrics with 'L' key
+- **Smooth Animations** - Transitions between lines with scale and opacity effects
+- **View Transitions** - Uses native View Transitions API when available
+
+## Component API
+
+### LyricsDisplay.Lyrics
+
+Main lyrics display component that consumes context automatically.
+
+**No props required** - Uses `SpotifyContext` and `LyricsContext` internally
+
+### LyricsDisplay.Button
+
+Button component to toggle lyrics visibility.
+
+**No props required** - Uses `SpotifyContext` and `LyricsContext` internally
+
+### Legacy Props Interface (for reference)
+
+<ParamField path="lines" type="LyricsLine[]" required>
+  Array of lyrics lines with timing information. Each line contains:
+  - `words: string` - The lyric text
+  - `timeTag: string` - Start time in `MM:SS.ms` format
+</ParamField>
+
+<ParamField path="progress" type="number" required>
+  Current playback progress in milliseconds
+</ParamField>
+
+<ParamField path="isPlaying" type="boolean" required>
+  Indicates whether the track is currently playing
+</ParamField>
+
+<ParamField path="track" type="SpotifyTrack" required>
+  The current Spotify track object containing artist and album information
+</ParamField>
+
+## Usage
+
+### Basic Implementation
+
+```tsx
+import { LyricsDisplay } from './components/LyricsDisplay';
+
+function Player() {
+  return (
+    <div>
+      <LyricsDisplay.Lyrics />
+      
+      <div className="controls">
+        <LyricsDisplay.Button />
+      </div>
+    </div>
+  );
+}
+```
+
+### Complete Example with Context
+
+```tsx
+import { LyricsDisplay } from './components/LyricsDisplay';
+import { useSpotify } from './contexts/SpotifyContext';
+import { useLyrics } from './contexts/LyricsContext';
+
+function MusicPlayer() {
+  const { currentTrack, isPlaying, lyrics } = useSpotify();
+  const { lyricsVisible } = useLyrics();
+  
+  return (
+    <div className="player">
+      {/* Album artwork and controls */}
+      <div className="artwork">
+        <img src={currentTrack?.album.images[0]?.url} />
+      </div>
+      
+      {/* Lyrics display */}
+      <LyricsDisplay.Lyrics />
+      
+      {/* Player controls with lyrics button */}
+      <div className="controls">
+        <button>Previous</button>
+        <button>Play/Pause</button>
+        <button>Next</button>
+        <LyricsDisplay.Button />
+      </div>
+    </div>
+  );
+}
+```
+
+## Keyboard Shortcuts
+
+- **L** - Toggle lyrics visibility
+- Works when lyrics are available for the current track
+
+## Custom Styling
+
+The component applies special styling for specific artists/albums via `data-style` attribute:
+
+```tsx
+<div data-style="brat">       {/* Charli XCX - Brat album */}
+<div data-style="folklore">  {/* Taylor Swift - Folklore/Evermore */}
+<div data-style="6 in the morning"> {/* Tender - 6 in the morning */}
+```
+
+### Styling with CSS
+
+```css
+/* Default lyrics style */
+.lyrics {
+  color: var(--text-color);
+}
+
+/* Custom style for Brat album */
+[data-style="brat"] {
+  font-family: 'Arial Black', sans-serif;
+  text-transform: lowercase;
+}
+
+/* Custom style for Folklore */
+[data-style="folklore"] {
+  font-family: 'Georgia', serif;
+  font-style: italic;
+}
+```
+
+## Active Line Styling
+
+The current line is highlighted with:
+
+```css
+.current-line {
+  font-size: 1.5rem;        /* text-2xl */
+  font-weight: bold;
+  color: white;
+  transform: scale(1.05);
+  transition: all 300ms;
+}
+
+.inactive-line {
+  font-size: 1.125rem;      /* text-lg */
+  font-weight: 500;
+  opacity: 0.7;
+}
+```
+
+## How It Works
+
+1. **Time Parsing** - Converts `MM:SS.ms` time tags to seconds
+2. **Line Matching** - Finds current line based on playback progress
+3. **Scroll Management** - Distinguishes between user and programmatic scrolling
+4. **Artist Detection** - Checks artist names and album titles for custom styling
+5. **Smooth Scrolling** - Uses `scrollIntoView` with `behavior: 'smooth'`
+6. **State Persistence** - Maintains scroll position during user interaction
+
+## User Interaction
+
+The component implements smart scrolling behavior:
+
+- **Auto-scroll** - Follows current line during playback
+- **User scroll** - Pauses auto-scroll when user manually scrolls
+- **Resume** - Auto-scroll resumes 300ms after user stops scrolling
+- **Track change** - Scrolls to top when track changes
+
+## Implementation Details
+
+The component at `/home/daytona/workspace/source/src/components/LyricsDisplay.tsx:14` uses React.memo for performance optimization and manages multiple refs for scroll behavior tracking.
+
+## Related Types
+
+```tsx
+interface LyricsLine {
+  words: string;
+  startTimeMs: string;
+  endTimeMs: string;
+  timeTag: string;  // Format: "MM:SS.ms"
+}
+
+interface SpotifyTrack {
+  id: string;
+  name: string;
+  artists: SpotifyArtist[];
+  album: SpotifyAlbum;
+  // ... other properties
+}
+```

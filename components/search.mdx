@@ -1,0 +1,244 @@
+---
+title: Search
+description: Modal search component with keyboard shortcuts for searching Spotify content
+---
+
+The `Search` component provides a full-screen modal interface for searching tracks, artists, albums, and playlists with keyboard shortcuts and filtered results.
+
+## Features
+
+- **Keyboard Shortcuts** - Open with Cmd/Ctrl+K, close with Escape
+- **Debounced Search** - 300ms debounce to reduce API calls
+- **Filtered Results** - Filter by All, Artists, Albums, Songs, or Playlists
+- **Quick Actions** - Add tracks to queue with a single click
+- **Toast Notifications** - Visual feedback when adding to queue
+- **Responsive UI** - Full-screen modal with backdrop
+
+## Component API
+
+### Search
+
+**No props required** - Uses `SpotifyContext` internally for SDK access
+
+## Usage
+
+### Basic Implementation
+
+```tsx
+import { Search } from './components/Search';
+
+function App() {
+  return (
+    <div>
+      <Search />
+      {/* Your app content */}
+    </div>
+  );
+}
+```
+
+### With Spotify Context
+
+```tsx
+import { Search } from './components/Search';
+import { SpotifyProvider } from './contexts/SpotifyContext';
+
+function App() {
+  return (
+    <SpotifyProvider>
+      <Search />
+      {/* Your app content */}
+    </SpotifyProvider>
+  );
+}
+```
+
+## Keyboard Shortcuts
+
+- **Cmd/Ctrl + K** - Open search modal
+- **Escape** - Close search modal and reset filters
+
+## Search Filters
+
+The component provides these filter options:
+
+| Filter | Value | Description |
+|--------|-------|-------------|
+| All | `all` | Search across all content types |
+| Artists | `artist` | Search only for artists |
+| Albums | `album` | Search only for albums |
+| Songs | `track` | Search only for tracks |
+| Playlists | `playlist` | Search only for playlists |
+
+## Result Types
+
+### Track Result
+
+```tsx
+{
+  type: 'track',
+  id: string,
+  name: string,
+  artists: SpotifyArtist[],
+  album: {
+    images: Array<{ url: string }>
+  },
+  uri: string
+}
+```
+
+### Artist Result
+
+```tsx
+{
+  type: 'artist',
+  id: string,
+  name: string,
+  images: Array<{ url: string }>
+}
+```
+
+### Album Result
+
+```tsx
+{
+  type: 'album',
+  id: string,
+  name: string,
+  images: Array<{ url: string }>
+}
+```
+
+### Playlist Result
+
+```tsx
+{
+  type: 'playlist',
+  id: string,
+  name: string,
+  images: Array<{ url: string }>
+}
+```
+
+## Actions
+
+### Add to Queue
+
+Clicking a track result adds it to the Spotify playback queue:
+
+```tsx
+const addToQueue = (result: SpotifyItem) => {
+  if (result.type === 'track') {
+    sdk?.player.addItemToPlaybackQueue(result.uri);
+    // Shows toast notification
+  }
+}
+```
+
+## Styling
+
+The component uses dynamic CSS variables for theming:
+
+```css
+/* Modal background */
+.modal {
+  background: color-mix(in srgb, var(--color), transparent);
+  backdrop-filter: blur(300px);
+}
+
+/* Search input */
+input[type="search"] {
+  background: rgba(0, 0, 0, 0.1);
+  color: white;
+}
+
+/* Active filter */
+.filter-active {
+  background: white;
+  color: black;
+}
+
+/* Hover states */
+.filter:hover {
+  background: color-mix(in srgb, var(--color) 99%, black);
+}
+
+.result:hover {
+  background: color-mix(in srgb, var(--color) 99%, black);
+}
+```
+
+## Loading States
+
+```tsx
+{isLoading && <div>Loading...</div>}
+{error && <div>Error: {error}</div>}
+```
+
+## Debouncing
+
+The component uses a custom `useDebounce` hook:
+
+```tsx
+const debouncedSearchQuery = useDebounce(searchQuery, 300);
+```
+
+This delays the search API call by 300ms after the user stops typing, reducing unnecessary requests.
+
+## Toast Notifications
+
+Uses Sonner for toast notifications when adding tracks:
+
+```tsx
+import { toast } from 'sonner';
+
+toast("Added to queue", {
+  duration: 2000,
+  style: {
+    pointerEvents: "none",
+    background: "color-mix(in srgb, var(--color) 99%, black)",
+    color: "var(--text-color)",
+    borderColor: "color-mix(in srgb, var(--color) 75%, black)"
+  }
+});
+```
+
+## Implementation Details
+
+The component at `/home/daytona/workspace/source/src/components/Search.tsx:33` uses React.memo for performance and manages modal state internally.
+
+## Dependencies
+
+```json
+{
+  "dependencies": {
+    "@spotify/web-api-ts-sdk": "^1.x",
+    "sonner": "^1.x",
+    "react": "^18.x"
+  }
+}
+```
+
+## Custom Hook: useDebounce
+
+Create this hook for debouncing:
+
+```tsx
+import { useState, useEffect } from 'react';
+
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+```

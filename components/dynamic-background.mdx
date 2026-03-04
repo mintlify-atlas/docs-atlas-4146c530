@@ -1,0 +1,134 @@
+---
+title: DynamicBackground
+description: Component that extracts colors from album artwork and creates animated gradient backgrounds
+---
+
+The `DynamicBackground` component analyzes the currently playing track's album artwork and generates a dynamic gradient background that adapts to the dominant colors in the image.
+
+## Features
+
+- **Color Extraction** - Uses ColorThief to extract dominant colors from album artwork
+- **Smooth Transitions** - Animates between color palettes when tracks change
+- **CSS Variables** - Sets global CSS variables for theming throughout the app
+- **Adaptive Text Color** - Calculates optimal text color based on background brightness
+- **Multiple Variants** - Includes standard and TEST variants with different effects
+
+## Installation
+
+```bash
+npm install colorthief
+```
+
+## Component API
+
+### DynamicBackground
+
+<ParamField path="imageUrl" type="string | undefined" required>
+  The URL of the album artwork image to extract colors from. Supports CORS-enabled images.
+</ParamField>
+
+<ParamField path="isPlaying" type="boolean" required>
+  Indicates whether music is currently playing. Used to control animation states.
+</ParamField>
+
+## Usage
+
+```tsx
+import { DynamicBackground } from './components/DynamicBackground';
+
+function Player() {
+  const { currentTrack, isPlaying } = useSpotify();
+  
+  return (
+    <div>
+      <DynamicBackground 
+        imageUrl={currentTrack?.album.images[0]?.url}
+        isPlaying={isPlaying}
+      />
+      {/* Your player UI */}
+    </div>
+  );
+}
+```
+
+## Advanced Usage
+
+### Using DynamicBackgroundTEST
+
+The TEST variant includes additional visual effects with SVG filters and animated marquee elements:
+
+```tsx
+import { DynamicBackgroundTEST } from './components/DynamicBackground';
+
+function Player() {
+  const { currentTrack, isPlaying } = useSpotify();
+  
+  return (
+    <div>
+      <DynamicBackgroundTEST 
+        imageUrl={currentTrack?.album.images[0]?.url}
+        isPlaying={isPlaying}
+      />
+      {/* Your player UI */}
+    </div>
+  );
+}
+```
+
+## CSS Variables
+
+The component sets these CSS variables that can be used throughout your app:
+
+- `--color` - The dominant background color as `rgb(r, g, b)`
+- `--text-color` - Calculated text color for optimal contrast as `rgb(r, g, b)`
+- `--color-0` through `--color-6` - Individual palette colors for gradient stops
+
+### Using CSS Variables
+
+```css
+.player-controls {
+  background: var(--color);
+  color: var(--text-color);
+}
+
+.accent-button {
+  background: color-mix(in srgb, var(--color) 80%, white);
+}
+```
+
+## How It Works
+
+1. **Image Loading** - Loads the album artwork with CORS enabled
+2. **Color Extraction** - Uses ColorThief to extract 4-color palette and dominant color
+3. **Brightness Calculation** - Calculates perceived brightness using luminance formula
+4. **Text Color Adjustment** - Lightens or darkens the dominant color for text contrast
+5. **CSS Variable Updates** - Sets CSS custom properties on document root
+6. **Gradient Rendering** - Renders radial gradients using extracted colors
+7. **Transition Animation** - Fades between color schemes with 1s ease-in-out
+
+## Helper Functions
+
+### getTextColor
+
+```tsx
+export function getTextColor(dominantColor: number[]): number[]
+```
+
+Calculates an appropriate text color based on the background's brightness.
+
+<ParamField path="dominantColor" type="number[]" required>
+  RGB array `[r, g, b]` representing the dominant background color
+</ParamField>
+
+**Returns:** RGB array for the calculated text color
+
+## Performance Considerations
+
+- Component includes transition states to prevent jarring color changes
+- Uses `requestAnimationFrame` in TEST variant for smooth updates
+- Fixed positioning with `z-index: -2` ensures it stays behind content
+- Memoized TEST variant reduces unnecessary re-renders
+
+## Implementation Details
+
+The component at `/home/daytona/workspace/source/src/components/DynamicBackground.tsx:9` creates a fixed-position div with multiple radial gradients positioned at different points to create a dynamic, multi-colored background effect.

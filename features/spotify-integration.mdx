@@ -1,0 +1,189 @@
+---
+title: Spotify Integration
+description: Learn how Player2 integrates with the Spotify Web API for seamless playback control
+---
+
+Player2 uses the Spotify Web API SDK to provide real-time playback control and synchronization. The integration is managed through a centralized context that handles authentication, playback state, and data fetching.
+
+## Architecture
+
+The Spotify integration is built around the `SpotifyContext` which provides:
+
+- **Authentication** - OAuth flow with user authorization
+- **Playback Control** - Play, pause, and track management
+- **Real-time Sync** - 1-second polling for playback state
+- **Lyrics Fetching** - Integration with LRCLIB API
+- **Queue Management** - Access to user's playback queue
+
+## Authentication Setup
+
+The SDK is initialized with user authorization and required scopes:
+
+```tsx src/contexts/SpotifyContext.tsx
+const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
+const SCOPES = [
+  'user-read-playback-state',
+  'user-modify-playback-state', 
+  'user-library-read'
+];
+
+const spotify = SpotifyApi.withUserAuthorization(
+  CLIENT_ID, 
+  REDIRECT_URI, 
+  SCOPES
+);
+```
+
+<Info>
+  The integration requires a Spotify Premium account for playback control features.
+</Info>
+
+## Playback Polling
+
+Player2 polls the Spotify API every second to maintain real-time synchronization:
+
+```tsx src/contexts/SpotifyContext.tsx
+const poll = async () => {
+  const state = await sdk.player.getCurrentlyPlayingTrack();
+  if (!state || !state.item) return;
+
+  const track = state.item as SpotifyTrack;
+  setIsPlaying(state.is_playing);
+  setProgress(state.progress_ms);
+
+  // Track changed - fetch new data
+  if (track.id !== currentTrack?.id) {
+    setCurrentTrack(track);
+    setDuration(track.duration_ms);
+    fetchLyrics(track, true, controller.signal);
+    refreshQueue();
+  }
+};
+
+const interval = setInterval(poll, 1000);
+```
+
+This polling mechanism enables:
+- Progress bar updates
+- Track change detection
+- Automatic lyrics synchronization
+- Queue updates
+
+## Lyrics Integration
+
+Player2 fetches synchronized lyrics from the LRCLIB API with intelligent caching and prefetching:
+
+```tsx src/contexts/SpotifyContext.tsx
+const fetchLyrics = async (track: SpotifyTrack, updateGlobalState = false, signal?: AbortSignal) => {
+  const cacheKey = `${track.artists[0].name}-${track.name}`;
+  
+  // Check cache first
+  if (lyricsCache.has(cacheKey)) {
+    const cached = lyricsCache.get(cacheKey)!;
+    if (updateGlobalState) setLyrics(cached);
+    return cached;
+  }
+
+  // Fetch from LRCLIB
+  const query = new URLSearchParams({
+    artist_name: track.artists[0].name,
+    track_name: track.name,
+    duration: (track.duration_ms / 1000).toString()
+  });
+
+  const res = await fetch(`https://lrclib.net/api/get?${query}`, { signal });
+  const data = await res.json();
+  
+  const parsed = parseLrcLyrics(data.syncedLyrics);
+  lyricsCache.set(cacheKey, parsed);
+  
+  return parsed;
+};
+```
+
+### Smart Prefetching
+
+Lyrics for the next track are prefetched 10 seconds before the current track ends:
+
+```tsx src/contexts/SpotifyContext.tsx
+const remaining = track.duration_ms - state.progress_ms;
+
+if (remaining < 10000 && queue.length > 0 && lastPrefetchedId.current !== track.id) {
+  console.log("Prefetching next song lyrics...");
+  lastPrefetchedId.current = track.id;
+  fetchLyrics(queue[0], false);
+}
+```
+
+## Using the Spotify Context
+
+Access Spotify functionality in any component using the `useSpotify` hook:
+
+```tsx
+import { useSpotify } from '../contexts/SpotifyContext';
+
+function MyComponent() {
+  const { 
+    currentTrack, 
+    isPlaying, 
+    progress, 
+    togglePlayback,
+    lyrics,
+    queue
+  } = useSpotify();
+
+  return (
+    <div>
+      <h1>{currentTrack?.name}</h1>
+      <button onClick={togglePlayback}>
+        {isPlaying ? 'Pause' : 'Play'}
+      </button>
+    </div>
+  );
+}
+```
+
+## Available Data & Methods
+
+The `SpotifyContext` provides:
+
+<ParamField path="sdk" type="SpotifyApi | null">
+  The Spotify SDK instance for advanced API calls
+</ParamField>
+
+<ParamField path="currentTrack" type="SpotifyTrack | null">
+  Currently playing track information
+</ParamField>
+
+<ParamField path="isPlaying" type="boolean">
+  Playback state
+</ParamField>
+
+<ParamField path="progress" type="number">
+  Current playback position in milliseconds
+</ParamField>
+
+<ParamField path="duration" type="number">
+  Track duration in milliseconds
+</ParamField>
+
+<ParamField path="queue" type="SpotifyTrack[]">
+  User's current playback queue
+</ParamField>
+
+<ParamField path="lyrics" type="LyricsResponse | null">
+  Synchronized lyrics for current track
+</ParamField>
+
+<ParamField path="togglePlayback" type="() => Promise<void>">
+  Toggle play/pause state
+</ParamField>
+
+<ParamField path="refreshQueue" type="() => Promise<void>">
+  Manually refresh the playback queue
+</ParamField>
+
+<Note>
+  All async operations include error handling and fallback states for a smooth user experience.
+</Note>

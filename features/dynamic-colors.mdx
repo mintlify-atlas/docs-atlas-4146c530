@@ -1,0 +1,181 @@
+---
+title: Dynamic Color Extraction
+description: How Player2 extracts colors from album artwork to create immersive visual experiences
+---
+
+Player2 uses the ColorThief library to extract dominant colors from album artwork and dynamically update the UI theme. This creates an immersive, context-aware visual experience that changes with each track.
+
+## How It Works
+
+The `DynamicBackground` component extracts a color palette from the current track's album artwork and applies it to the UI using CSS custom properties.
+
+### Color Extraction Process
+
+```tsx src/components/DynamicBackground.tsx
+useEffect(() => {
+  if (!imageUrl) return;
+
+  const img = new Image();
+  img.crossOrigin = 'Anonymous';
+  img.src = imageUrl;
+
+  img.onload = async () => {
+    const colorThief = new ColorThief();
+    
+    // Extract 4-color palette
+    const palette = colorThief.getPalette(img, 4);
+    const newColors = palette.map(([r, g, b]) => `rgb(${r}, ${g}, ${b})`);
+    setColors(newColors);
+
+    // Get dominant color
+    const dominantColor = colorThief.getColor(img);
+    const bgColor = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
+
+    // Calculate contrasting text color
+    const textColor = getTextColor(dominantColor);
+
+    // Apply to CSS variables
+    document.documentElement.style.setProperty("--color", bgColor);
+    document.documentElement.style.setProperty("--text-color", `rgb(${textColor})`);
+  };
+}, [imageUrl]);
+```
+
+## Color Palette Application
+
+The extracted colors are used to create a radial gradient background:
+
+```tsx src/components/DynamicBackground.tsx
+const gradientStyle = {
+  position: "fixed" as const,
+  inset: 0,
+  background: `radial-gradient( at 40% 20%, var(--color-0) 0px, transparent 50% ),
+    radial-gradient(at 80% 0%, var(--color-1) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, var(--color-2) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, var(--color-3) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, var(--color-4) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, var(--color-5) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, var(--color-6) 0px, transparent 50%)`,
+  opacity: isTransitioning ? 0 : 1,
+  transition: "all 1s ease-in-out",
+  zIndex: -2,
+  scale: 1.5,
+  filter: 'blur(var(--blur)) saturate(var(--saturate))',
+};
+```
+
+<Info>
+  The gradient uses multiple radial gradients positioned at different points to create depth and visual interest.
+</Info>
+
+## Intelligent Text Color
+
+Player2 automatically calculates whether to use light or dark text based on the background color's brightness:
+
+```tsx src/components/DynamicBackground.tsx
+function getBrightness(rgb: number[]) {
+  const [r, g, b] = rgb;
+  // Using the formula for perceived brightness
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+function adjustColor(rgb: number[], factor: number) {
+  return rgb.map((value) => Math.min(255, Math.max(0, value + factor)));
+}
+
+export function getTextColor(dominantColor: number[]) {
+  const brightness = getBrightness(dominantColor);
+  return brightness > 128
+    ? adjustColor(dominantColor, -100)  // Darker text for light backgrounds
+    : adjustColor(dominantColor, 100);  // Lighter text for dark backgrounds
+}
+```
+
+This algorithm:
+1. Calculates perceived brightness using the luminance formula
+2. Adjusts the dominant color by ±100 RGB units
+3. Ensures sufficient contrast for readability
+
+## Smooth Transitions
+
+Color changes are animated smoothly when tracks change:
+
+```tsx src/components/DynamicBackground.tsx
+setIsTransitioning(true);
+const newColors = palette.map(([r, g, b]) => `rgb(${r}, ${g}, ${b})`);
+setColors(newColors);
+
+// Reset transition state after animation
+setTimeout(() => setIsTransitioning(false), 1000);
+```
+
+<Card title="Transition Timeline" icon="clock">
+  1. Track changes
+  2. New image loads
+  3. Colors extracted
+  4. Fade to transparent (opacity: 0)
+  5. CSS variables updated
+  6. Fade in new colors (opacity: 1) over 1 second
+</Card>
+
+## CSS Variable System
+
+The extracted colors are exposed as CSS custom properties that can be used throughout the application:
+
+<CodeGroup>
+```css Global Variables
+:root {
+  --color: rgb(r, g, b);        /* Dominant color */
+  --text-color: rgb(r, g, b);    /* Contrasting text color */
+  --color-0: rgb(r, g, b);       /* Palette color 1 */
+  --color-1: rgb(r, g, b);       /* Palette color 2 */
+  --color-2: rgb(r, g, b);       /* Palette color 3 */
+  --color-3: rgb(r, g, b);       /* Palette color 4 */
+}
+```
+
+```css Usage Example
+.button {
+  background-color: var(--color);
+  color: var(--text-color);
+}
+
+.hover-button:hover {
+  background-color: color-mix(in srgb, var(--color), black 5%);
+}
+```
+</CodeGroup>
+
+## Usage in Components
+
+Apply the dynamic background to your app:
+
+```tsx
+import { DynamicBackground } from './components/DynamicBackground';
+import { useSpotify } from './contexts/SpotifyContext';
+
+function App() {
+  const { currentTrack, isPlaying } = useSpotify();
+
+  return (
+    <>
+      <DynamicBackground 
+        imageUrl={currentTrack?.album.images[0].url}
+        isPlaying={isPlaying}
+      />
+      {/* Your app content */}
+    </>
+  );
+}
+```
+
+<Warning>
+  The `crossOrigin = 'Anonymous'` attribute is required for ColorThief to access image data. Ensure your image server supports CORS.
+</Warning>
+
+## Performance Considerations
+
+- **Caching**: Colors are only recalculated when the image URL changes
+- **Memoization**: The component uses React's memo for optimal re-renders
+- **Async Loading**: Color extraction happens asynchronously after image load
+- **CSS-driven**: Animations use CSS transitions for GPU acceleration

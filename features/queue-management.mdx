@@ -1,0 +1,300 @@
+---
+title: Queue Management
+description: View and manage your Spotify playback queue with drag-and-drop reordering
+---
+
+Player2 provides a visual interface for viewing and managing your Spotify playback queue. The queue drawer displays upcoming tracks with album artwork, artist information, and interactive controls.
+
+## Architecture
+
+The queue management system is built with:
+
+- **Framer Motion Reorder** - Drag-and-drop functionality
+- **Context Menu** - Right-click options for track actions
+- **Real-time Updates** - Automatic queue synchronization
+- **Animated Transitions** - Smooth enter/exit animations
+
+## Queue Fetching
+
+The queue is fetched from Spotify's API and stored in the `SpotifyContext`:
+
+```tsx src/contexts/SpotifyContext.tsx
+const refreshQueue = useCallback(async () => {
+  if (!sdk) return;
+  try {
+    const queueData = await sdk.player.getUsersQueue();
+    setQueue(queueData.queue.filter(t => t.type === 'track') as SpotifyTrack[]);
+  } catch (err) {
+    console.error('Queue error:', err);
+  }
+}, [sdk]);
+```
+
+<Info>
+  Only tracks are included in the queue. Other content types (like podcasts) are filtered out.
+</Info>
+
+## Queue Drawer Component
+
+The `QueueDrawer` displays all tracks in the current queue:
+
+```tsx src/components/QueueDrawer.tsx
+export function QueueDrawer() {
+  const { sdk, queue } = useSpotify();
+  const [items, setItems] = useState(queue);
+
+  useEffect(() => {
+    setItems(queue);
+  }, [queue]);
+
+  if (!sdk) return null;
+
+  return (
+    <Reorder.Group 
+      axis="y" 
+      values={items} 
+      onReorder={setItems} 
+      className={"flex flex-col gap-3 p-3 bg-black/40 text-white flex-1"}
+    >
+      <AnimatePresence>
+        {items.map((item, i) => (
+          <Item key={item.id} track={item} index={i} />
+        ))}
+      </AnimatePresence>
+    </Reorder.Group>
+  );
+}
+```
+
+The component:
+1. Syncs local state with the global queue
+2. Uses `Reorder.Group` for drag-and-drop
+3. Wraps items in `AnimatePresence` for exit animations
+
+## Individual Queue Items
+
+Each track in the queue is rendered as an interactive item:
+
+```tsx src/components/QueueDrawer.tsx
+function Item({ track, index }: { track: SpotifyTrack; index: number}) {
+  const { sdk } = useSpotify();
+  const { openDrawer } = useDrawer();
+  
+  if (!sdk) return null;
+
+  return (
+    <Reorder.Item
+      value={track}
+      initial={{ opacity: 0, translateY: 10, transition: { delay: index * 0.5 } }}
+      animate={{ opacity: 1, translateY: 0, transition: { delay: 0 } }}
+      exit={{ opacity: 0, height: 0 }}
+    >
+      <ContextMenuDemo
+        track={track}
+        trigger={
+          <div className='flex gap-3'>
+            <img 
+              src={track.album.images[0].url} 
+              alt={track.name} 
+              className='size-10 rounded pointer-events-none' 
+            />
+            <div className='flex flex-col flex-1'>
+              <span className='line-clamp-1'>{track.name}</span>
+              <span className='text-xs line-clamp-1'>
+                {parseArtists(track.artists, sdk, openDrawer)}
+              </span>
+            </div>
+            <button type='button' className="p-2">
+              {/* Drag handle icon */}
+            </button>
+          </div>
+        }
+      />
+    </Reorder.Item>
+  );
+}
+```
+
+## Animation System
+
+### Staggered Entry
+
+Queue items animate in with a staggered delay:
+
+```tsx src/components/QueueDrawer.tsx
+initial={{ 
+  opacity: 0, 
+  translateY: 10, 
+  transition: { delay: index * 0.5 } 
+}}
+animate={{ 
+  opacity: 1, 
+  translateY: 0, 
+  transition: { delay: 0 } 
+}}
+```
+
+<Card title="Animation Sequence" icon="film">
+  1. Item starts 10px below final position with 0 opacity
+  2. Each subsequent item has 0.5s additional delay
+  3. Items fade in and slide up to final position
+  4. Animation takes 0s once started (instant after delay)
+</Card>
+
+### Exit Animation
+
+When items are removed, they smoothly collapse:
+
+```tsx src/components/QueueDrawer.tsx
+exit={{ opacity: 0, height: 0 }}
+```
+
+This creates a seamless experience when tracks finish playing and leave the queue.
+
+## Artist Parsing & Navigation
+
+Artist names are clickable and open the artist detail view:
+
+```tsx src/components/QueueDrawer.tsx
+function parseArtists(artists: SpotifyArtist[], sdk: SpotifyApi, openDrawer: Function) {
+  return artists.map((artist, index) => (
+    <span 
+      key={artist.id} 
+      onClick={() => openArtist(artist.id, sdk, openDrawer)} 
+      data-id={artist.id} 
+      className={`${(index < artists.length - 1) ? `after:content-[",_"]`: ``}`}
+    >
+      <span className='hover:underline'>{artist.name}</span>
+    </span>
+  ));
+}
+```
+
+Features:
+- Multiple artists separated by commas
+- Hover underline for visual feedback
+- Click opens artist drawer
+- Each artist retains their Spotify ID for API calls
+
+## Context Menu Integration
+
+Right-clicking (or long-pressing) a queue item opens a context menu with track actions:
+
+```tsx src/components/QueueDrawer.tsx
+<ContextMenuDemo
+  track={track}
+  trigger={
+    <div className='flex gap-3'>
+      {/* Track display */}
+    </div>
+  }
+/>
+```
+
+<Note>
+  The `ContextMenuDemo` component wraps the track display and provides actions like "Add to playlist", "Go to album", "Go to artist", etc.
+</Note>
+
+## Drag and Drop Reordering
+
+Tracks can be reordered by dragging (currently visual only):
+
+```tsx src/components/QueueDrawer.tsx
+<Reorder.Group 
+  axis="y" 
+  values={items} 
+  onReorder={setItems}
+>
+  {/* Items */}
+</Reorder.Group>
+```
+
+The reordering updates local state immediately for responsive feedback:
+
+```tsx src/components/QueueDrawer.tsx
+const [items, setItems] = useState(queue);
+
+useEffect(() => {
+  setItems(queue);
+}, [queue]);
+```
+
+<Warning>
+  Current implementation updates local state only. To persist reordering, you would need to call the Spotify API's queue management endpoints.
+</Warning>
+
+## Queue Refresh
+
+The queue automatically refreshes when:
+1. The current track changes
+2. The user manually triggers a refresh
+
+```tsx
+import { useSpotify } from './contexts/SpotifyContext';
+
+function MyComponent() {
+  const { queue, refreshQueue } = useSpotify();
+
+  return (
+    <div>
+      <button onClick={refreshQueue}>Refresh Queue</button>
+      <p>{queue.length} tracks in queue</p>
+    </div>
+  );
+}
+```
+
+## Usage
+
+```tsx
+import { QueueDrawer } from './components/QueueDrawer';
+import { useDrawer } from './components/DrawerManager';
+
+function App() {
+  const { openDrawer } = useDrawer();
+
+  return (
+    <div>
+      <button onClick={() => openDrawer(<QueueDrawer />)}>
+        View Queue
+      </button>
+    </div>
+  );
+}
+```
+
+## Performance Optimizations
+
+<AccordionGroup>
+  <Accordion title="Efficient Re-renders">
+    The component only re-renders when the queue changes, not on every playback update.
+  </Accordion>
+  
+  <Accordion title="Image Loading">
+    Album artwork uses the smallest image size (10x10 rem) for faster loading.
+  </Accordion>
+  
+  <Accordion title="Lazy Animations">
+    Framer Motion's AnimatePresence only animates items that are being added or removed.
+  </Accordion>
+  
+  <Accordion title="Pointer Events">
+    Album artwork has `pointer-events-none` to prevent accidental interaction during dragging.
+  </Accordion>
+</AccordionGroup>
+
+## Component Integration
+
+The queue drawer is designed to work with the Drawer Manager system:
+
+```tsx
+const { openDrawer, closeDrawer } = useDrawer();
+
+// Open queue drawer
+openDrawer(<QueueDrawer />);
+
+// Close drawer
+closeDrawer();
+```
+
+This allows the queue to be displayed as a side panel or modal overlay anywhere in the app.

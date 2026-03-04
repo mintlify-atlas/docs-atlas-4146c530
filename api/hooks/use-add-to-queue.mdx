@@ -1,0 +1,101 @@
+---
+title: useAddToQueue
+description: A React hook that provides a function to add tracks to the Spotify playback queue
+---
+
+## Overview
+
+The `useAddToQueue` hook provides a convenient way to add Spotify tracks to the user's playback queue. It handles the Spotify SDK integration and error handling internally.
+
+## Signature
+
+```typescript
+function useAddToQueue(): (track: SpotifyTrack) => Promise<void>
+```
+
+## Parameters
+
+This hook takes no parameters.
+
+## Return Value
+
+Returns an async function that accepts a `SpotifyTrack` object and adds it to the playback queue.
+
+**Function signature:**
+```typescript
+(track: SpotifyTrack) => Promise<void>
+```
+
+### Function Parameters
+
+<ParamField path="track" type="SpotifyTrack" required>
+  The Spotify track object to add to the queue. Must include a `uri` property.
+</ParamField>
+
+## Usage Example
+
+From `src/components/ContextMenu.tsx:15`:
+
+```typescript
+import { useAddToQueue } from '../utils';
+
+function ContextMenuDemo({ track }: { track: SpotifyTrack }) {
+  const addToQueue = useAddToQueue();
+  const { refreshQueue } = useSpotify();
+  
+  return (
+    <ContextMenu.Root>
+      <ContextMenu.Item 
+        onClick={() => {
+          addToQueue(track);
+          refreshQueue();
+        }}
+      >
+        Add to queue
+      </ContextMenu.Item>
+    </ContextMenu.Root>
+  );
+}
+```
+
+## How It Works
+
+The hook internally:
+
+1. Accesses the Spotify SDK from the `SpotifyContext`
+2. Returns an async function that:
+   - Validates that both the track and SDK are available
+   - Calls `sdk.player.addItemToPlaybackQueue()` with the track's URI
+   - Returns early if either the track or SDK is not available
+
+## Dependencies
+
+This hook requires:
+- The `SpotifyContext` to be available in the component tree
+- A valid Spotify SDK instance with player permissions
+
+## Type Information
+
+The hook expects a `SpotifyTrack` object which should include:
+
+```typescript
+interface SpotifyTrack {
+  uri: string;  // Spotify URI for the track
+  // ... other track properties
+}
+```
+
+## Error Handling
+
+The hook performs basic validation by returning early if the track or SDK is not available. For production use, you may want to add additional error handling around the function call:
+
+```typescript
+const addToQueue = useAddToQueue();
+
+try {
+  await addToQueue(track);
+  // Show success message
+} catch (error) {
+  // Handle error
+}
+```

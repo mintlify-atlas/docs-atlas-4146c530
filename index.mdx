@@ -1,97 +1,164 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Player2 Documentation"
+description: "An enhanced Spotify music player with dynamic visuals and synchronized lyrics"
+mode: "custom"
 ---
 
-## Setting up
+<div className="relative overflow-hidden bg-gradient-to-br from-[#1DB954] via-[#169C46] to-[#0f1117] dark:from-[#1DB954] dark:via-[#169C46] dark:to-[#0f1117] py-20">
+  <div className="max-w-6xl mx-auto px-6">
+    <div className="grid lg:grid-cols-12 gap-8 items-center">
+      <div className="lg:col-span-7">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+          Welcome to Player2
+        </h1>
+        <p className="text-lg sm:text-xl text-white/90 mb-8 max-w-2xl">
+          Build an enhanced music player experience with Spotify integration, dynamic color extraction, and real-time synchronized lyrics.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <a
+            href="/quickstart"
+            className="inline-flex items-center px-6 py-3 rounded-lg bg-white text-[#1DB954] font-semibold hover:bg-gray-100 transition-colors"
+          >
+            Get started
+          </a>
+          <a
+            href="/api/contexts/spotify-context"
+            className="inline-flex items-center px-6 py-3 rounded-lg border border-white/30 bg-white/10 text-white font-semibold hover:bg-white/20 transition-colors"
+          >
+            API reference
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-4">
+    Quick start
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Get up and running with Player2 in minutes
+  </p>
+  
+  <Steps>
+    <Step title="Clone and install">
+      Clone the repository and install dependencies with your preferred package manager.
+      
+      ```bash
+      git clone https://github.com/scoboslor/player2.git
+      cd player2
+      npm install
+      ```
+    </Step>
+    
+    <Step title="Configure Spotify credentials">
+      Create a `.env` file in the root directory and add your Spotify API credentials. You can obtain these from the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+      
+      ```bash
+      VITE_SPOTIFY_CLIENT_ID=your_client_id_here
+      VITE_SPOTIFY_REDIRECT_URI=http://localhost:5173
+      ```
+    </Step>
+    
+    <Step title="Start the development server">
+      Launch the app and start exploring the features.
+      
+      ```bash
+      npm run dev
+      ```
+      
+      Open your browser to `http://localhost:5173` and authenticate with Spotify.
+    </Step>
+  </Steps>
+</div>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-4">
+    Key features
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Explore what makes Player2 special
+  </p>
+  
+  <CardGroup cols={2}>
     <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+      title="Spotify integration"
+      icon="spotify"
+      href="/features/spotify-integration"
+    >
+      Connect to Spotify with OAuth authentication and control playback seamlessly
+    </Card>
+    <Card
+      title="Dynamic colors"
+      icon="palette"
+      href="/features/dynamic-colors"
+    >
+      Extract colors from album artwork to create immersive visual experiences
+    </Card>
+    <Card
+      title="Synchronized lyrics"
+      icon="music"
+      href="/features/lyrics-display"
+    >
+      Display real-time lyrics with karaoke-style highlighting and smooth scrolling
+    </Card>
+    <Card
+      title="Queue management"
+      icon="list"
+      href="/features/queue-management"
+    >
+      View and manage your playback queue with intuitive controls
+    </Card>
+  </CardGroup>
+</div>
 
-## Create beautiful pages
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-4">
+    Explore the documentation
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Learn how to use and customize Player2
+  </p>
+  
+  <CardGroup cols={3}>
+    <Card
+      title="Setup guide"
+      icon="wrench"
+      href="/setup"
+    >
+      Configure your environment and API credentials
+    </Card>
+    <Card
+      title="Components"
+      icon="cube"
+      href="/components/overview"
+    >
+      Explore the React components that power Player2
+    </Card>
+    <Card
+      title="API reference"
+      icon="code"
+      href="/api/contexts/spotify-context"
+    >
+      Dive into contexts, hooks, and type definitions
+    </Card>
+  </CardGroup>
+</div>
 
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="rounded-2xl border border-gray-200 dark:border-[#27272a] bg-gray-50 dark:bg-[#1a1d27] p-8">
+    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+      Ready to build?
+    </h2>
+    <p className="text-base text-gray-600 dark:text-gray-400 mb-6">
+      Start creating your enhanced music player experience with Player2 today.
+    </p>
+    <a
+      href="/quickstart"
+      className="inline-flex items-center px-6 py-3 rounded-lg bg-[#1DB954] text-white font-semibold hover:bg-[#169C46] transition-colors"
+    >
+      Get started now
+    </a>
+  </div>
+</div>

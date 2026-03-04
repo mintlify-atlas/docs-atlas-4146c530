@@ -1,0 +1,334 @@
+---
+title: Drawer Components
+description: Nested drawer system for displaying artists, albums, and queue information
+---
+
+Player2 includes a comprehensive drawer system for displaying additional content like artist details, album information, and the playback queue. The system supports nested drawers with smooth animations.
+
+## Components
+
+### DrawerManager
+
+Provides context and manages the drawer stack with support for nested drawers.
+
+### ArtistDrawer
+
+Displays artist information including top tracks and albums.
+
+### QueueDrawer
+
+Shows the current playback queue with reorderable tracks.
+
+### NestedDrawer
+
+Base drawer component used internally for rendering individual drawers.
+
+## DrawerManager
+
+### Setup
+
+```tsx
+import { DrawerProvider } from './components/DrawerManager';
+
+function App() {
+  return (
+    <DrawerProvider>
+      {/* Your app content */}
+    </DrawerProvider>
+  );
+}
+```
+
+### Hook: useDrawer
+
+```tsx
+import { useDrawer } from './components/DrawerManager';
+
+function MyComponent() {
+  const { openDrawer, closeDrawer, updateDrawer } = useDrawer();
+  
+  // Use drawer functions
+}
+```
+
+### DrawerContext API
+
+<ParamField path="openDrawer" type="(data: DrawerData) => string" required>
+  Opens a new drawer and returns its ID. The drawer is added to the stack.
+</ParamField>
+
+<ParamField path="closeDrawer" type="() => void" required>
+  Closes the topmost drawer in the stack.
+</ParamField>
+
+<ParamField path="updateDrawer" type="(id: string, data: Partial<DrawerData>) => void" required>
+  Updates a specific drawer's data by ID. Useful for loading states.
+</ParamField>
+
+### DrawerData Type
+
+```tsx
+type DrawerData = {
+  title: string;              // Drawer title
+  header: ReactNode;          // Header content (e.g., image)
+  content: ReactNode;         // Main content
+  id?: string;                // Optional ID
+  onScrollToBottom?: () => Promise<void>;  // Infinite scroll callback
+  isLoading?: boolean;        // Loading state
+}
+```
+
+## ArtistDrawer
+
+### Features
+
+- Displays artist header image with gradient overlay
+- Shows top tracks for the artist
+- Displays artist's albums in a horizontal grid
+- Color-themed based on artist image
+- Context menu on tracks for quick actions
+
+### Usage
+
+```tsx
+import { ArtistDrawer } from './components/ArtistDrawer';
+
+function App() {
+  return (
+    <DrawerProvider>
+      <ArtistDrawer />
+      {/* Your app content */}
+    </DrawerProvider>
+  );
+}
+```
+
+### Opening an Artist
+
+```tsx
+import { useDrawer } from './components/DrawerManager';
+import { useSpotify } from './contexts/SpotifyContext';
+
+function ArtistButton({ artistId }: { artistId: string }) {
+  const { sdk } = useSpotify();
+  const { openDrawer } = useDrawer();
+  
+  const handleClick = async () => {
+    // The ArtistDrawer component provides an openArtist function
+    // This is typically called via the global openArtist helper
+  };
+  
+  return <button onClick={handleClick}>View Artist</button>;
+}
+```
+
+### Implementation Details
+
+The component at `/home/daytona/workspace/source/src/components/ArtistDrawer.tsx:25` makes three parallel API calls:
+
+1. Artist details (`sdk.artists.get(id)`)
+2. Top tracks (`sdk.artists.topTracks(id, country)`)
+3. Albums (`sdk.artists.albums(id)`)
+
+## QueueDrawer
+
+### Features
+
+- Displays current playback queue
+- Drag-and-drop reordering with Framer Motion
+- Smooth enter/exit animations
+- Context menu for track actions
+- Clickable artists that open artist drawers
+
+### Usage
+
+```tsx
+import { QueueDrawer } from './components/QueueDrawer';
+import { useDrawer } from './components/DrawerManager';
+
+function App() {
+  const { openDrawer } = useDrawer();
+  
+  const showQueue = () => {
+    openDrawer({
+      title: "Queue",
+      header: <div className="p-4"><h2>Up Next</h2></div>,
+      content: <QueueDrawer />
+    });
+  };
+  
+  return (
+    <div>
+      <button onClick={showQueue}>Show Queue</button>
+    </div>
+  );
+}
+```
+
+### Reordering
+
+The queue uses Framer Motion's Reorder component:
+
+```tsx
+import { Reorder } from 'framer-motion';
+
+<Reorder.Group axis="y" values={items} onReorder={setItems}>
+  {items.map(item => (
+    <Reorder.Item key={item.id} value={item}>
+      {/* Item content */}
+    </Reorder.Item>
+  ))}
+</Reorder.Group>
+```
+
+## NestedDrawer
+
+Base component for rendering drawers. Usually not used directly.
+
+### Props
+
+<ParamField path="trigger" type="ReactNode" required>
+  Button or element that triggers the drawer (automatically rendered)
+</ParamField>
+
+<ParamField path="header" type="ReactNode" required>
+  Content displayed at the top of the drawer (e.g., image, title)
+</ParamField>
+
+<ParamField path="content" type="ReactNode" required>
+  Main content area of the drawer
+</ParamField>
+
+<ParamField path="removeDrawer" type="Function">
+  Callback when drawer is removed from the stack
+</ParamField>
+
+<ParamField path="isModal" type="boolean">
+  Whether the drawer should behave as a modal (default: false)
+</ParamField>
+
+<ParamField path="drag" type="Function | null">
+  Custom drag handler function
+</ParamField>
+
+## Complete Example
+
+```tsx
+import { DrawerProvider, useDrawer } from './components/DrawerManager';
+import { ArtistDrawer } from './components/ArtistDrawer';
+import { QueueDrawer } from './components/QueueDrawer';
+import { useSpotify } from './contexts/SpotifyContext';
+
+function App() {
+  return (
+    <SpotifyProvider>
+      <DrawerProvider>
+        <MusicPlayer />
+        <ArtistDrawer />
+      </DrawerProvider>
+    </SpotifyProvider>
+  );
+}
+
+function MusicPlayer() {
+  const { queue } = useSpotify();
+  const { openDrawer } = useDrawer();
+  
+  const showQueue = () => {
+    openDrawer({
+      title: "Queue",
+      header: (
+        <div className="bg-black/20 p-4">
+          <h2 className="text-2xl font-bold">Up Next</h2>
+          <p className="text-sm opacity-70">{queue.length} tracks</p>
+        </div>
+      ),
+      content: <QueueDrawer />
+    });
+  };
+  
+  return (
+    <div className="player">
+      {/* Player controls */}
+      <button onClick={showQueue}>Queue</button>
+    </div>
+  );
+}
+```
+
+## Styling
+
+Drawers use the Vaul library with custom styling:
+
+```css
+/* Drawer container */
+.drawer-content {
+  right: 0.5rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 24rem;
+  backdrop-filter: blur(300px);
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+}
+
+/* Nested drawer offset */
+.drawer-nested {
+  transform: translateX(var(--x, 0));
+}
+
+/* Drawer header */
+.drawer-header {
+  position: sticky;
+  top: -330px;  /* Allows header to slide up */
+}
+```
+
+## Infinite Scroll
+
+Support for loading more content on scroll:
+
+```tsx
+const loadMore = async () => {
+  // Fetch more items
+  const newItems = await fetchMoreTracks();
+  // Update drawer content
+};
+
+openDrawer({
+  title: "Tracks",
+  header: <Header />,
+  content: <TrackList />,
+  onScrollToBottom: loadMore,
+  isLoading: false
+});
+```
+
+## Color Theming
+
+ArtistDrawer extracts colors and applies them:
+
+```tsx
+const colorThief = new ColorThief();
+const dominantColor = colorThief.getColor(img);
+const textColor = getTextColor(dominantColor);
+
+// Applied to drawer content
+<div style={{
+  color: `rgb(${textColor})`,
+  background: `linear-gradient(180deg, rgb(${dominantColor}), ...)`
+}} />
+```
+
+## Dependencies
+
+```json
+{
+  "dependencies": {
+    "vaul": "^0.9.0",
+    "framer-motion": "^11.x",
+    "@spotify/web-api-ts-sdk": "^1.x",
+    "colorthief": "^2.x"
+  }
+}
+```

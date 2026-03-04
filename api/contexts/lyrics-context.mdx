@@ -1,0 +1,398 @@
+---
+title: 'LyricsContext'
+description: 'Context provider for managing lyrics display visibility state'
+---
+
+## Overview
+
+The `LyricsContext` provides a simple state management solution for controlling the visibility of the lyrics display panel. It's a lightweight context that works alongside `SpotifyContext` to manage UI state.
+
+## LyricsProvider
+
+Wraps your application to provide lyrics visibility state.
+
+### Props
+
+<ParamField path="children" type="ReactNode" required>
+  The component tree that needs access to lyrics visibility state
+</ParamField>
+
+### Usage
+
+```tsx
+import { LyricsProvider } from './contexts/LyricsContext';
+import { SpotifyProvider } from './contexts/SpotifyContext';
+
+function App() {
+  return (
+    <SpotifyProvider>
+      <LyricsProvider>
+        <YourApp />
+      </LyricsProvider>
+    </SpotifyProvider>
+  );
+}
+```
+
+## useLyrics Hook
+
+Access and control lyrics visibility state from any component within the provider.
+
+### Return Value
+
+Returns a `LyricsContextType` object with the following properties:
+
+<ResponseField name="lyricsVisible" type="boolean">
+  Whether the lyrics display panel is currently visible
+</ResponseField>
+
+<ResponseField name="setLyricsVisible" type="(visible: boolean) => void">
+  Function to update the lyrics visibility state
+</ResponseField>
+
+## Usage Examples
+
+### Toggle Lyrics Button
+
+```tsx
+import { useLyrics } from './contexts/LyricsContext';
+import { useSpotify } from './contexts/SpotifyContext';
+
+function LyricsToggle() {
+  const { lyricsVisible, setLyricsVisible } = useLyrics();
+  const { lyrics } = useSpotify();
+  
+  const hasLyrics = lyrics?.lines && lyrics.lines.length > 0;
+  
+  return (
+    <button 
+      disabled={!hasLyrics}
+      onClick={() => setLyricsVisible(!lyricsVisible)}
+    >
+      {lyricsVisible ? 'Hide Lyrics' : 'Show Lyrics'}
+    </button>
+  );
+}
+```
+
+### Conditional Rendering
+
+```tsx
+function LyricsPanel() {
+  const { lyricsVisible } = useLyrics();
+  const { lyrics, currentTrack } = useSpotify();
+  
+  if (!lyricsVisible || !lyrics) return null;
+  
+  return (
+    <div className="lyrics-panel">
+      <h2>{currentTrack?.name}</h2>
+      {lyrics.lines.map((line, i) => (
+        <p key={i}>{line.words}</p>
+      ))}
+    </div>
+  );
+}
+```
+
+### Keyboard Shortcut
+
+```tsx
+function LyricsKeyboardHandler() {
+  const { lyricsVisible, setLyricsVisible } = useLyrics();
+  
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'l') {
+        setLyricsVisible(!lyricsVisible);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [lyricsVisible, setLyricsVisible]);
+  
+  return null;
+}
+```
+
+### With View Transition API
+
+```tsx
+function AnimatedLyricsToggle() {
+  const { lyricsVisible, setLyricsVisible } = useLyrics();
+  
+  const handleToggle = () => {
+    if (document.startViewTransition) {
+      document.startViewTransition(() => {
+        setLyricsVisible(!lyricsVisible);
+      });
+    } else {
+      setLyricsVisible(!lyricsVisible);
+    }
+  };
+  
+  return (
+    <button onClick={handleToggle}>
+      Toggle Lyrics
+    </button>
+  );
+}
+```
+
+### Layout Adjustment
+
+```tsx
+function AppLayout() {
+  const { lyricsVisible } = useLyrics();
+  
+  const containerClass = lyricsVisible 
+    ? "min-h-screen" 
+    : "min-h-screen grid place-items-center";
+  
+  const albumArtClass = lyricsVisible
+    ? "w-14 h-14 rounded-sm"
+    : "w-80 h-80 rounded-lg";
+  
+  return (
+    <div className={containerClass}>
+      <img className={albumArtClass} src={albumArt} />
+      {lyricsVisible && <LyricsDisplay />}
+    </div>
+  );
+}
+```
+
+### Sticky Header with Compact View
+
+```tsx
+function NowPlayingHeader() {
+  const { lyricsVisible } = useLyrics();
+  const { currentTrack } = useSpotify();
+  
+  const headerClass = lyricsVisible
+    ? "sticky top-0 p-3 grid grid-cols-[3.5rem_auto] gap-3"
+    : "relative p-6 grid grid-rows-[20rem_auto]";
+  
+  return (
+    <div className={headerClass}>
+      <img 
+        src={currentTrack?.album.images[0].url}
+        className="aspect-square"
+      />
+      <div>
+        <p>{currentTrack?.name}</p>
+        <p>{currentTrack?.artists[0].name}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+### Auto-Hide on Track Change
+
+```tsx
+function AutoHideLyrics() {
+  const { setLyricsVisible } = useLyrics();
+  const { currentTrack } = useSpotify();
+  
+  useEffect(() => {
+    // Hide lyrics when track changes
+    setLyricsVisible(false);
+  }, [currentTrack?.id]);
+  
+  return null;
+}
+```
+
+### Scroll Lock
+
+```tsx
+function LyricsWithScrollLock() {
+  const { lyricsVisible } = useLyrics();
+  
+  useEffect(() => {
+    if (lyricsVisible) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [lyricsVisible]);
+  
+  return <LyricsPanel />;
+}
+```
+
+## Real-World Implementation
+
+From `App.tsx` (lines 88-93, 182-188):
+
+```tsx
+function ImageFlipper({ track, prevTrack }) {
+  const { lyricsVisible } = useLyrics();
+  
+  // Adjust container layout based on lyrics visibility
+  const containerClasses = lyricsVisible
+    ? "min-h-dvh"
+    : "min-h-dvh grid place-items-center";
+  
+  const wrapperClasses = lyricsVisible
+    ? "sticky top-0 p-3 z-20 grid grid-cols-[3.5rem_auto_auto]"
+    : "relative size-80 grid grid-rows-[20rem_auto]";
+  
+  return (
+    <div className={containerClasses}>
+      <div className={wrapperClasses}>
+        {/* Album art and track info */}
+      </div>
+      {lyricsVisible && <LyricsDisplay.Lyrics />}
+    </div>
+  );
+}
+```
+
+From `LyricsDisplay.tsx` (lines 171-212):
+
+```tsx
+const LyricsDisplayButton = () => {
+  const { lyricsVisible, setLyricsVisible } = useLyrics();
+  const { lyrics } = useSpotify();
+  
+  const handleClick = () => {
+    if (document.startViewTransition) { 
+      document.startViewTransition(() => {
+        setLyricsVisible(!lyricsVisible);
+      });
+    } else {
+      setLyricsVisible(!lyricsVisible);
+    }
+  };
+  
+  // Keyboard shortcut (L key)
+  useEffect(() => {
+    const handleKeyDown = ({ key }) => {
+      if (key.toLowerCase() === "l") {
+        handleClick();
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+  
+  const hasLyrics = lyrics?.lines && lyrics.lines.length > 0;
+  
+  return (
+    <button 
+      disabled={!hasLyrics}
+      onClick={handleClick}
+      className={hasLyrics ? "" : "opacity-50"}
+    >
+      {/* Lyrics icon */}
+    </button>
+  );
+};
+```
+
+## TypeScript Interface
+
+```typescript
+interface LyricsContextType {
+  lyricsVisible: boolean;
+  setLyricsVisible: (visible: boolean) => void;
+}
+```
+
+## Best Practices
+
+### Always Check for Lyrics Availability
+
+Before showing the lyrics panel, verify that lyrics are actually available:
+
+```tsx
+const { lyrics } = useSpotify();
+const { lyricsVisible, setLyricsVisible } = useLyrics();
+
+const hasLyrics = lyrics?.lines && lyrics.lines.length > 0;
+
+if (lyricsVisible && !hasLyrics) {
+  setLyricsVisible(false);
+}
+```
+
+### Combine with Loading States
+
+```tsx
+function LyricsButton() {
+  const { lyrics } = useSpotify();
+  const { setLyricsVisible } = useLyrics();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleClick = async () => {
+    if (!lyrics) {
+      setIsLoading(true);
+      // Wait for lyrics to load
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsLoading(false);
+    }
+    setLyricsVisible(true);
+  };
+  
+  return (
+    <button onClick={handleClick} disabled={isLoading}>
+      {isLoading ? 'Loading...' : 'Show Lyrics'}
+    </button>
+  );
+}
+```
+
+### Responsive Design
+
+Adjust UI based on both screen size and lyrics visibility:
+
+```tsx
+function ResponsiveLyrics() {
+  const { lyricsVisible } = useLyrics();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
+  if (lyricsVisible && isMobile) {
+    return <FullScreenLyrics />;
+  }
+  
+  if (lyricsVisible) {
+    return <SidebarLyrics />;
+  }
+  
+  return null;
+}
+```
+
+## Error Handling
+
+The context will throw an error if used outside the provider:
+
+```typescript
+export function useLyrics(): LyricsContextType {
+  const context = useContext(LyricsContext);
+  if (context === undefined) {
+    throw new Error('useLyrics must be used within a LyricsProvider');
+  }
+  return context;
+}
+```
+
+Always wrap your app with the provider:
+
+```tsx
+// ✅ Correct
+<LyricsProvider>
+  <App />
+</LyricsProvider>
+
+// ❌ Wrong - will throw error
+<App /> // useLyrics() called without provider
+```

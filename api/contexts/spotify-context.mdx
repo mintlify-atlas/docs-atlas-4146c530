@@ -1,0 +1,318 @@
+---
+title: 'SpotifyContext'
+description: 'Context provider for Spotify playback state and lyrics management'
+---
+
+## Overview
+
+The `SpotifyContext` provides centralized state management for Spotify playback, track information, lyrics, and queue management. It handles authentication, playback polling, lyrics fetching from LRCLIB, and automatic prefetching of upcoming track lyrics.
+
+## SpotifyProvider
+
+Wraps your application to provide Spotify state and functionality.
+
+### Props
+
+<ParamField path="children" type="React.ReactNode" required>
+  The component tree that needs access to Spotify context
+</ParamField>
+
+### Usage
+
+```tsx
+import { SpotifyProvider } from './contexts/SpotifyContext';
+
+function App() {
+  return (
+    <SpotifyProvider>
+      <YourApp />
+    </SpotifyProvider>
+  );
+}
+```
+
+## useSpotify Hook
+
+Access Spotify state and controls from any component within the provider.
+
+### Return Value
+
+Returns a `SpotifyContextType` object with the following properties:
+
+<ResponseField name="sdk" type="SpotifyApi | null">
+  The Spotify Web API SDK instance for making API calls
+</ResponseField>
+
+<ResponseField name="currentTrack" type="SpotifyTrack | null">
+  The currently playing track with full metadata
+  
+  ```typescript
+  interface SpotifyTrack {
+    id: string;
+    name: string;
+    type: 'track';
+    artists: SpotifyArtist[];
+    album: SpotifyAlbum;
+    duration_ms: number;
+    explicit: boolean;
+    uri: string;
+    // ... additional fields
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="isPlaying" type="boolean">
+  Whether playback is currently active
+</ResponseField>
+
+<ResponseField name="progress" type="number">
+  Current playback position in milliseconds
+</ResponseField>
+
+<ResponseField name="duration" type="number">
+  Total track duration in milliseconds
+</ResponseField>
+
+<ResponseField name="error" type="string | null">
+  Error message if Spotify credentials are missing or connection fails
+</ResponseField>
+
+<ResponseField name="queue" type="SpotifyTrack[]">
+  Array of upcoming tracks in the playback queue
+</ResponseField>
+
+<ResponseField name="lyrics" type="LyricsResponse | null">
+  Parsed lyrics for the current track
+  
+  ```typescript
+  interface LyricsResponse {
+    error: boolean;
+    syncType: string;
+    lines: LyricsLine[];
+  }
+  
+  interface LyricsLine {
+    words: string;
+    startTimeMs: string;
+    endTimeMs: string;
+    timeTag?: string;
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="togglePlayback" type="() => Promise<void>">
+  Toggles playback between play and pause states
+</ResponseField>
+
+<ResponseField name="refreshQueue" type="() => Promise<void>">
+  Manually refreshes the playback queue from Spotify
+</ResponseField>
+
+### Usage Examples
+
+#### Basic Playback Control
+
+```tsx
+import { useSpotify } from './contexts/SpotifyContext';
+
+function PlaybackControls() {
+  const { currentTrack, isPlaying, togglePlayback, sdk } = useSpotify();
+
+  return (
+    <div>
+      <h2>{currentTrack?.name}</h2>
+      <p>{currentTrack?.artists[0]?.name}</p>
+      
+      <button onClick={togglePlayback}>
+        {isPlaying ? 'Pause' : 'Play'}
+      </button>
+      
+      <button onClick={() => sdk?.player.skipToNext()}>
+        Next Track
+      </button>
+      
+      <button onClick={() => sdk?.player.skipToPrevious()}>
+        Previous Track
+      </button>
+    </div>
+  );
+}
+```
+
+#### Display Current Track with Album Art
+
+```tsx
+function NowPlaying() {
+  const { currentTrack, progress, duration } = useSpotify();
+  
+  if (!currentTrack) return null;
+  
+  const progressPercent = (progress / duration) * 100;
+  
+  return (
+    <div>
+      <img 
+        src={currentTrack.album.images[0].url} 
+        alt={currentTrack.name}
+      />
+      <h2>{currentTrack.name}</h2>
+      <p>{currentTrack.artists.map(a => a.name).join(', ')}</p>
+      
+      <div className="progress-bar">
+        <div style={{ width: `${progressPercent}%` }} />
+      </div>
+    </div>
+  );
+}
+```
+
+#### Access Lyrics
+
+```tsx
+function LyricsViewer() {
+  const { lyrics, progress } = useSpotify();
+  
+  if (!lyrics) return <p>No lyrics available</p>;
+  
+  const currentLine = lyrics.lines.find(line => {
+    const start = parseInt(line.startTimeMs);
+    const end = parseInt(line.endTimeMs);
+    return progress >= start && progress < end;
+  });
+  
+  return (
+    <div>
+      {lyrics.lines.map((line, i) => (
+        <p 
+          key={i}
+          className={line === currentLine ? 'active' : ''}
+        >
+          {line.words}
+        </p>
+      ))}
+    </div>
+  );
+}
+```
+
+#### Queue Management
+
+```tsx
+function QueueDisplay() {
+  const { queue, refreshQueue, sdk } = useSpotify();
+  
+  return (
+    <div>
+      <button onClick={refreshQueue}>Refresh Queue</button>
+      
+      <ul>
+        {queue.map(track => (
+          <li key={track.id}>
+            <img src={track.album.images[2].url} alt="" />
+            <span>{track.name}</span>
+            <span>{track.artists[0].name}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+#### Seek to Position
+
+```tsx
+function SeekBar() {
+  const { progress, duration, sdk } = useSpotify();
+  
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const position = parseInt(e.target.value);
+    sdk?.player.seekToPosition(position);
+  };
+  
+  return (
+    <input
+      type="range"
+      min={0}
+      max={duration}
+      value={progress}
+      onChange={handleSeek}
+    />
+  );
+}
+```
+
+## Features
+
+### Automatic Playback Polling
+
+The context polls Spotify every second to update playback state, ensuring real-time synchronization.
+
+### Lyrics Prefetching
+
+When 10 seconds remain in the current track, lyrics for the next queued track are automatically prefetched and cached, providing seamless transitions.
+
+### LRC Format Parsing
+
+Lyrics are fetched from LRCLIB in LRC format and parsed into a structured format with precise timestamps for each line.
+
+### Caching
+
+Lyrics are cached by artist and track name to minimize API calls and improve performance.
+
+### Abort Control
+
+Lyrics fetching uses AbortController to cancel pending requests when tracks change, preventing race conditions.
+
+## Environment Variables
+
+The provider requires these environment variables:
+
+<ParamField path="VITE_SPOTIFY_CLIENT_ID" type="string" required>
+  Your Spotify application client ID
+</ParamField>
+
+<ParamField path="VITE_SPOTIFY_REDIRECT_URI" type="string" required>
+  OAuth redirect URI configured in your Spotify app settings
+</ParamField>
+
+## Spotify API Scopes
+
+The context requests these Spotify permissions:
+
+- `user-read-playback-state` - Read current playback state
+- `user-modify-playback-state` - Control playback (play, pause, skip)
+- `user-library-read` - Access user's saved tracks
+
+## Error Handling
+
+```tsx
+function ErrorBoundary() {
+  const { error } = useSpotify();
+  
+  if (error) {
+    return (
+      <div className="error">
+        <p>{error}</p>
+        <p>Please check your Spotify credentials</p>
+      </div>
+    );
+  }
+  
+  return <YourApp />;
+}
+```
+
+## TypeScript Types
+
+All types are exported from `/types.ts`:
+
+```typescript
+import type { 
+  SpotifyTrack, 
+  SpotifyArtist, 
+  SpotifyAlbum,
+  LyricsResponse,
+  LyricsLine 
+} from './types';
+```

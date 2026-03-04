@@ -1,0 +1,160 @@
+---
+title: 'Spotify Types'
+description: 'Type definitions for Spotify API data structures'
+---
+
+## SpotifyTrack
+
+Represents a Spotify track with complete metadata.
+
+<ResponseField name="id" type="string" required>
+  Unique Spotify identifier for the track
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name of the track
+</ResponseField>
+
+<ResponseField name="type" type="'track'" required>
+  The object type, always set to 'track'
+</ResponseField>
+
+<ResponseField name="artists" type="SpotifyArtist[]" required>
+  Array of artists who performed the track
+</ResponseField>
+
+<ResponseField name="album" type="SpotifyAlbum" required>
+  The album on which the track appears
+</ResponseField>
+
+<ResponseField name="available_markets" type="string[]" required>
+  List of country codes where the track is available
+</ResponseField>
+
+<ResponseField name="disc_number" type="number" required>
+  The disc number of the track (usually 1)
+</ResponseField>
+
+<ResponseField name="duration_ms" type="number" required>
+  The track length in milliseconds
+</ResponseField>
+
+<ResponseField name="episode" type="boolean" required>
+  Whether the track is an episode (podcast)
+</ResponseField>
+
+<ResponseField name="explicit" type="boolean" required>
+  Whether the track has explicit content
+</ResponseField>
+
+<ResponseField name="href" type="string" required>
+  Full Spotify API URL for the track
+</ResponseField>
+
+<ResponseField name="is_local" type="boolean" required>
+  Whether the track is from a local file
+</ResponseField>
+
+<ResponseField name="preview_url" type="string | null" required>
+  URL to a 30-second preview of the track, or null if not available
+</ResponseField>
+
+<ResponseField name="track" type="boolean" required>
+  Whether the item is a track
+</ResponseField>
+
+<ResponseField name="track_number" type="number" required>
+  The track number on the album
+</ResponseField>
+
+<ResponseField name="uri" type="string" required>
+  Spotify URI for the track (spotify:track:...)
+</ResponseField>
+
+<ResponseField name="is_playable" type="boolean">
+  Whether the track can be played in the current market
+</ResponseField>
+
+---
+
+## SpotifyArtist
+
+Represents a Spotify artist.
+
+<ResponseField name="id" type="string" required>
+  Unique Spotify identifier for the artist
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name of the artist
+</ResponseField>
+
+<ResponseField name="type" type="'artist'" required>
+  The object type, always set to 'artist'
+</ResponseField>
+
+<ResponseField name="images" type="SpotifyImage[]">
+  Array of artist images in various sizes
+</ResponseField>
+
+---
+
+## SpotifyAlbum
+
+Represents a Spotify album.
+
+<ResponseField name="id" type="string" required>
+  Unique Spotify identifier for the album
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name of the album
+</ResponseField>
+
+<ResponseField name="type" type="'album'" required>
+  The object type, always set to 'album'
+</ResponseField>
+
+<ResponseField name="images" type="SpotifyImage[]" required>
+  Array of album cover art in various sizes
+</ResponseField>
+
+---
+
+## SpotifyPlaylist
+
+Represents a Spotify playlist.
+
+<ResponseField name="id" type="string" required>
+  Unique Spotify identifier for the playlist
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The name of the playlist
+</ResponseField>
+
+<ResponseField name="type" type="'playlist'" required>
+  The object type, always set to 'playlist'
+</ResponseField>
+
+<ResponseField name="images" type="SpotifyImage[]" required>
+  Array of playlist cover images in various sizes
+</ResponseField>
+
+---
+
+## SpotifyImage
+
+Represents an image resource from Spotify.
+
+<ResponseField name="url" type="string" required>
+  The source URL of the image
+</ResponseField>
+
+<ResponseField name="height" type="number" required>
+  The image height in pixels
+</ResponseField>
+
+<ResponseField name="width" type="number" required>
+  The image width in pixels
+</ResponseField>

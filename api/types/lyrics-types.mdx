@@ -1,0 +1,38 @@
+---
+title: 'Lyrics Types'
+description: 'Type definitions for lyrics data structures'
+---
+
+## LyricsResponse
+
+Represents the complete response from a lyrics API request.
+
+<ResponseField name="error" type="boolean" required>
+  Indicates whether an error occurred while fetching lyrics
+</ResponseField>
+
+<ResponseField name="syncType" type="string" required>
+  The synchronization type for the lyrics (e.g., 'LINE_SYNCED' for line-by-line timing)
+</ResponseField>
+
+<ResponseField name="lines" type="LyricsLine[]" required>
+  Array of lyrics lines with timing information
+</ResponseField>
+
+---
+
+## LyricsLine
+
+Represents a single line of lyrics with timing information.
+
+<ResponseField name="words" type="string" required>
+  The text content of the lyrics line
+</ResponseField>
+
+<ResponseField name="startTimeMs" type="string" required>
+  The start time of the line in milliseconds (as a string)
+</ResponseField>
+
+<ResponseField name="endTimeMs" type="string" required>
+  The end time of the line in milliseconds (as a string)
+</ResponseField>

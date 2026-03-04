@@ -1,0 +1,77 @@
+---
+title: Components Overview
+description: Overview of all Player2 components for building a Spotify music player interface
+---
+
+Player2 provides a set of React components for building a feature-rich Spotify music player web application. These components handle everything from dynamic backgrounds to lyrics display and drawer-based navigation.
+
+## Core Components
+
+### DynamicBackground
+
+Extracts colors from album artwork and creates animated gradient backgrounds that adapt to the currently playing track.
+
+[View DynamicBackground documentation →](/components/dynamic-background)
+
+### LyricsDisplay
+
+Displays synchronized lyrics with auto-scrolling and highlights the current line based on playback progress.
+
+[View LyricsDisplay documentation →](/components/lyrics-display)
+
+### Search
+
+Provides a modal search interface with keyboard shortcuts (Cmd/Ctrl+K) for searching tracks, artists, albums, and playlists.
+
+[View Search documentation →](/components/search)
+
+### Drawer Components
+
+A set of drawer components for displaying additional information:
+
+- **ArtistDrawer** - Shows artist details, top tracks, and albums
+- **QueueDrawer** - Displays and manages the playback queue
+- **DrawerManager** - Manages nested drawer state and interactions
+
+[View Drawer documentation →](/components/drawers)
+
+## Component Architecture
+
+All components are built with:
+
+- **React** - Core UI library
+- **TypeScript** - Type safety and better developer experience
+- **Framer Motion** - Smooth animations and transitions
+- **Vaul** - Drawer/modal functionality
+- **Spotify Web API SDK** - Integration with Spotify
+
+## Context Providers
+
+Components rely on these context providers:
+
+- `SpotifyContext` - Provides SDK, playback state, and track information
+- `LyricsContext` - Manages lyrics visibility state
+- `DrawerContext` - Handles drawer state management
+
+## Getting Started
+
+Import components from the components directory:
+
+```tsx
+import { DynamicBackground } from './components/DynamicBackground';
+import { LyricsDisplay } from './components/LyricsDisplay';
+import { Search } from './components/Search';
+import { DrawerProvider } from './components/DrawerManager';
+```
+
+Wrap your app with necessary providers:
+
+```tsx
+<SpotifyProvider>
+  <LyricsProvider>
+    <DrawerProvider>
+      <App />
+    </DrawerProvider>
+  </LyricsProvider>
+</SpotifyProvider>
+```
